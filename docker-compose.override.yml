@@ -50,6 +50,11 @@ services:
     ports:
       - "5432:5432"
 
+  qdrant:
+    restart: "no"
+    ports:
+      - "6333:6333"
+
   adminer:
     restart: "no"
     ports:

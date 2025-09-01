@@ -19,6 +19,29 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
+  qdrant:
+    image: qdrant/qdrant:v1.10.0
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    env_file:
+      - .env
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-my-secret-key}  # 认证
+      QDRANT__STORAGE__STORAGE_PATH: "/qdrant/storage"            # 数据目录
+      QDRANT__SERVICE__GRPC_PORT: 6334                           # gRPC 端口
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+
+
   adminer:
     image: adminer
     restart: always
@@ -83,6 +106,9 @@ services:
       - default
     depends_on:
       db:
+        condition: service_healthy
+        restart: true
+      qdrant:
         condition: service_healthy
         restart: true
       prestart:
@@ -164,6 +190,7 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
 volumes:
   app-db-data:
+  qdrant_data:
 
 networks:
   traefik-public:
