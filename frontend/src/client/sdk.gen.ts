@@ -46,6 +46,16 @@ import type {
   UtilsTestEmailData,
   UtilsTestEmailResponse,
   UtilsHealthCheckResponse,
+  KnowledgeBasesReadKnowledgeBasesData,
+  KnowledgeBasesReadKnowledgeBasesResponse,
+  KnowledgeBasesCreateKnowledgeBaseData,
+  KnowledgeBasesCreateKnowledgeBaseResponse,
+  KnowledgeBasesReadKnowledgeBaseData,
+  KnowledgeBasesReadKnowledgeBaseResponse,
+  KnowledgeBasesUpdateKnowledgeBaseData,
+  KnowledgeBasesUpdateKnowledgeBaseResponse,
+  KnowledgeBasesDeleteKnowledgeBaseData,
+  KnowledgeBasesDeleteKnowledgeBaseResponse,
 } from "./types.gen"
 
 export class ItemsService {
@@ -544,6 +554,128 @@ export class UtilsService {
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/utils/health-check/",
+    })
+  }
+}
+
+
+export class KnowledgeBaseService {
+  /**
+   * Read Items
+   * Retrieve items.
+   * @param data The data for the request.
+   * @param data.skip
+   * @param data.limit
+   * @returns ItemsPublic Successful Response
+   * @throws ApiError
+   */
+  public static readKnowledgeBases(
+    data: KnowledgeBasesReadKnowledgeBasesData = {},
+  ): CancelablePromise<KnowledgeBasesReadKnowledgeBasesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/kb/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Create KnowledgeBase
+   * Create new knowledge base.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns ItemPublic Successful Response
+   * @throws ApiError
+   */
+  public static createKnowledgeBase(
+    data: KnowledgeBasesCreateKnowledgeBaseData,
+  ): CancelablePromise<KnowledgeBasesCreateKnowledgeBaseResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/kb/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Read Item
+   * Get item by ID.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns ItemPublic Successful Response
+   * @throws ApiError
+   */
+  public static readKnowledgeBase(
+    data: KnowledgeBasesReadKnowledgeBaseData,
+  ): CancelablePromise<KnowledgeBasesReadKnowledgeBaseResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/kb/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Update KnowledgeBase
+   * Update a knowledge base.
+   * @param data The data for the request.
+   * @param data.id
+   * @param data.requestBody
+   * @returns ItemPublic Successful Response
+   * @throws ApiError
+   */
+  public static updateKnowledgeBase(
+    data: KnowledgeBasesUpdateKnowledgeBaseData,
+  ): CancelablePromise<KnowledgeBasesUpdateKnowledgeBaseResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/kb/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Delete KnowledgeBase
+   * Delete a knowledge base.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteKnowledgeBase(
+    data: KnowledgeBasesDeleteKnowledgeBaseData,
+  ): CancelablePromise<KnowledgeBasesDeleteKnowledgeBaseResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/kb/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
     })
   }
 }

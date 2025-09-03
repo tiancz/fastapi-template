@@ -232,3 +232,64 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = Message
 
 export type UtilsHealthCheckResponse = boolean
+
+
+
+
+
+export type KnowledgeBaseCreate = {
+  name: string
+  description?: string | null
+}
+
+export type KnowledgeBasePublic = {
+  name: string
+  description?: string | null
+  id: string
+  create_by: string
+  status: number
+}
+
+export type KnowledgeBasesPublic = {
+  data: Array<KnowledgeBasePublic>
+  count: number
+}
+
+export type KnowledgeBaseUpdate = {
+  name?: string | null
+  description?: string | null
+}
+
+
+export type KnowledgeBasesReadKnowledgeBasesData = {
+  limit?: number
+  skip?: number
+}
+
+export type KnowledgeBasesReadKnowledgeBasesResponse = KnowledgeBasesPublic
+
+export type KnowledgeBasesCreateKnowledgeBaseData = {
+  requestBody: KnowledgeBaseCreate
+}
+
+export type KnowledgeBasesCreateKnowledgeBaseResponse = KnowledgeBasePublic
+
+export type KnowledgeBasesReadKnowledgeBaseData = {
+  id: string
+}
+
+export type KnowledgeBasesReadKnowledgeBaseResponse = KnowledgeBasePublic
+
+export type KnowledgeBasesUpdateKnowledgeBaseData = {
+  id: string
+  requestBody: KnowledgeBaseUpdate
+}
+
+export type KnowledgeBasesUpdateKnowledgeBaseResponse = KnowledgeBasePublic
+
+export type KnowledgeBasesDeleteKnowledgeBaseData = {
+  id: string
+}
+
+export type KnowledgeBasesDeleteKnowledgeBaseResponse = Message
+
