@@ -293,3 +293,66 @@ export type KnowledgeBasesDeleteKnowledgeBaseData = {
 
 export type KnowledgeBasesDeleteKnowledgeBaseResponse = Message
 
+export type KnowledgeBasesGetKnowledgeBaseFilesData = {
+  id: string
+}
+
+
+
+export type DocPublic = {
+  name: string
+  id: string
+  kbId: string
+  create_by: string
+  status: number
+}
+
+export type KnowledgeBasesGetKnowledgeBaseFilesResponse = DocPublic
+
+
+export type DocsReadDocsData = {
+  limit?: number
+  skip?: number
+  kbId?: string
+}
+
+export type DocCreate =  {
+  name: string
+}
+
+export type DocUpdate = {
+  name?: string | null
+}
+
+export type DocReadDocsResponse = DocPublic
+
+export type DocCreateDocData = {
+  kbId: string
+  requestBody: DocCreate
+}
+
+export type DocCreateDocResponse = DocPublic
+
+export type DocReadDocData = {
+  id: string
+  kbId: string
+}
+
+export type DocReadDocResponse = DocPublic
+
+export type DocUpdateDocData = {
+  id: string
+  kbId: string
+  requestBody: DocUpdate
+}
+
+export type DocUpdateDocResponse = DocPublic
+
+export type DocDeleteDocData = {
+  id: string
+  kbId: string
+}
+
+export type DocDeleteDocResponse = Message
+
+

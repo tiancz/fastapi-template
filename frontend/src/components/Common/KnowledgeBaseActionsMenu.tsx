@@ -5,6 +5,7 @@ import { MenuContent, MenuRoot, MenuTrigger } from "../ui/menu"
 import type { KnowledgeBasePublic } from "@/client"
 import DeleteKnowledgeBase from "../KnowledgeBase/DeleteKnowledgeBase"
 import EditKnowledgeBase from "../KnowledgeBase/EditKnowledgeBase"
+import ViewFiles from "../KnowledgeBase/ViewFiles"
 
 interface KnowledgeBaseActionsMenuProps {
   item: KnowledgeBasePublic
@@ -19,6 +20,7 @@ export const KnowledgeBaseActionsMenu = ({ item }: KnowledgeBaseActionsMenuProps
         </IconButton>
       </MenuTrigger>
       <MenuContent>
+        <ViewFiles id={item.id} />
         <EditKnowledgeBase item={item} />
         <DeleteKnowledgeBase id={item.id} />
       </MenuContent>

@@ -56,7 +56,14 @@ import type {
   KnowledgeBasesUpdateKnowledgeBaseResponse,
   KnowledgeBasesDeleteKnowledgeBaseData,
   KnowledgeBasesDeleteKnowledgeBaseResponse,
+  KnowledgeBasesGetKnowledgeBaseFilesData,
+  KnowledgeBasesGetKnowledgeBaseFilesResponse,
+  DocReadDocData,
+  DocReadDocResponse,
+  DocUpdateDocData,
+  DocUpdateDocResponse, DocDeleteDocData, DocDeleteDocResponse, DocCreateDocData, DocCreateDocResponse,
 } from "./types.gen"
+import {DocReadDocsResponse, DocsReadDocsData} from "./types.gen";
 
 export class ItemsService {
   /**
@@ -672,6 +679,116 @@ export class KnowledgeBaseService {
       url: "/api/v1/kb/{id}",
       path: {
         id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+
+/**
+ * 获取知识库文件列表
+ * @param data 包含知识库ID的数据对象
+ * @returns 返回可取消的Promise，解析为知识库文件列表响应
+ */
+  public static getKnowledgeBaseFiles(
+      data: KnowledgeBasesGetKnowledgeBaseFilesData, // 包含知识库ID的数据参数
+  ): CancelablePromise<KnowledgeBasesGetKnowledgeBaseFilesResponse> { // 返回可取消的Promise，类型为知识库文件列表响应
+    return __request(OpenAPI, { // 发起API请求
+      method: "GET", // 使用GET请求方法
+      url: "/api/v1/kb/{id}/docs", // API端点URL
+      path: { // 路径参数
+        id: data.id, // 从数据中获取知识库ID
+      },
+      errors: { // 错误响应处理
+        422: "Validation Error", // 验证错误时的响应
+      },
+    })
+  }
+}
+
+
+export class DocsService {
+  public static readDocs(
+    data: DocsReadDocsData = {},
+  ): CancelablePromise<DocReadDocsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/kb/{kbId}/docs/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      path: {
+        kbId: data.kbId,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createDoc(
+    data: DocCreateDocData,
+  ): CancelablePromise<DocCreateDocResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/kb/{kbId}/doc/",
+      body: data.requestBody,
+      path: {
+        kbId: data.kbId,
+      },
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static readDoc(
+    data: DocReadDocData,
+  ): CancelablePromise<DocReadDocResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/kb/{kbId}/doc/{id}",
+      path: {
+        kbId: data.kbId,
+        docId: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static updateDoc(
+    data: DocUpdateDocData,
+  ): CancelablePromise<DocUpdateDocResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/kb/{kbId}/doc/{id}",
+      path: {
+        kbId: data.kbId,
+        docId: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteDoc(
+    data: DocDeleteDocData,
+  ): CancelablePromise<DocDeleteDocResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: `/api/v1/kb/{kbId}/doc/{id}`,
+      path: {
+        kbId: data.kbId,
+        docId: data.id,
       },
       errors: {
         422: "Validation Error",

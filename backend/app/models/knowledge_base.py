@@ -51,6 +51,7 @@ class KnowledgeBasePublic(KnowledgeBaseBase):
     # 状态 0:不可用 1:可用
     status: int
     created_by: uuid.UUID
+    owner: str
 
 
 class KnowledgeBasesPublic(SQLModel):
