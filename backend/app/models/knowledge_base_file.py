@@ -15,7 +15,10 @@ class KnowledgeBaseFileBase(SQLModel):
     size: int
     # 状态 0:不可用 1:可用
     status: int
-    # 存储路径
+    # 文件哈希
+    file_hash: str | None = Field(default=None, max_length=255)
+    # 存储路径 local:/data/knowledge_base/file/, aliyun:/data/knowledge_base/file/ qiniu:/data/knowledge_base/file/,
+    # tencent:/data/knowledge_base/file/
     storage: str | None = Field(default=None, max_length=255)
     knowledge_base_id: uuid.UUID = Field(
         foreign_key="knowledge_base.id", nullable=False
@@ -36,6 +39,7 @@ class KnowledgeBaseFile(KnowledgeBaseFileBase, table=True):
     knowledge_base_id: uuid.UUID = Field(
         foreign_key="knowledge_base.id", nullable=False
     )
+    file_hash: str | None = Field(default=None, max_length=255)
     # 状态 0:不可用 1:可用
     status: int
     created_by: uuid.UUID = Field(

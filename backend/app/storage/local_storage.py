@@ -45,18 +45,16 @@ class LocalStorage:
 
         return full_path
 
-    async def save_upload_file(self, filename: str, file) -> str:
+    async def save_upload_file(self, filename: str, contents) -> str:
         """保存上传的文件"""
         full_path = self._get_full_path(filename)
-
         # 创建目录
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
-        # 读取上传文件内容并保存
-        contents = await file.read()
+        # 上传文件内容并保存
         async with aiofiles.open(full_path, "wb") as f:
             await f.write(contents)
-
+        print(f"File saved: {full_path}")
         return full_path
 
     async def load_once(self, filename: str) -> bytes:
