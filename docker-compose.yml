@@ -140,6 +140,8 @@ services:
       timeout: 5s
       retries: 5
 
+    volumes:
+      - ./storage:/app/storage
     build:
       context: ./backend
     labels:
