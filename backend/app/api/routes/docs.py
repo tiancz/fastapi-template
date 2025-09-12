@@ -29,18 +29,18 @@ from app.models.user import (
     UserPublic,
     UsersPublic,
 )
+from langchain_community.embeddings import ZhipuAIEmbeddings
 
 
 router = APIRouter(tags=["docs"])
 
+
 # ========= 工具函数 =========
-# def get_embedding(text: str) -> List[float]:
-#     """调用 OpenAI embedding API"""
-#     resp = openai.embeddings.create(
-#         model="text-embedding-3-small",
-#         input=text
-#     )
-#     return resp.data[0].embedding
+embeddings = ZhipuAIEmbeddings(
+    model="embedding-3",
+    api_key=os.getenv("ZHIPUAI_API_KEY"),
+    dimensions=1024
+)
 
 
 def chunk_text(text: str, max_len: int = 500) -> List[str]:
@@ -62,26 +62,6 @@ def extract_text_from_file(file_path: str, filename: str) -> str:
     else:
         raise HTTPException(status_code=400, detail="不支持的文件类型")
     return text
-
-
-# def insert_doc(kb_id: int, doc_id: str, text_chunks: List[str]):
-#     """把文档分块存入 Qdrant"""
-#     points = []
-#     for chunk in text_chunks:
-#         # embedding = get_embedding(chunk)
-#         embedding = [1, 0.01]
-#         points.append(
-#             PointStruct(
-#                 id=str(uuid.uuid4()),
-#                 vector=embedding,
-#                 payload={
-#                     "kb_id": kb_id,
-#                     "doc_id": doc_id,
-#                     "text": chunk
-#                 }
-#             )
-#         )
-#     qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
 # ========= 路由 =========
@@ -152,10 +132,12 @@ async def upload_doc(*, session: SessionDep,
         doc_id = knowledge_base_file.id
         """向量化文档并存储到 Qdrant"""
         try:
+            embedding = embeddings.embed_documents(chunks)
             count = vector_store.insert_document(
                 kb_id=kb_id,
                 doc_id=doc_id,
-                text_chunks=chunks
+                text_chunks=chunks,
+                embeddings=embedding
             )
             print(f"message: 文档 {doc_id} 向量化成功, 共计向量化 {count} 条数据")
         except Exception as e:

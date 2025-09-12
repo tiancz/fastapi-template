@@ -33,7 +33,7 @@ class QdrantVectorStore:
                 self.client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config=VectorParams(
-                        size=384,  # 根据你的嵌入模型调整维度
+                        size=1024,  # 根据你的嵌入模型调整维度
                         distance=Distance.COSINE
                     )
                 )
