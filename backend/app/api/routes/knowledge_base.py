@@ -73,8 +73,11 @@ def read_knowledge_base(session: SessionDep, id: uuid.UUID,) -> Any:
     knowledge_base = session.exec(statement).first()
     if not knowledge_base:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-
-    return knowledge_base
+    resp = KnowledgeBasePublic.model_validate(
+        knowledge_base.dict(),
+        update={"owner": UserPublic.model_validate(knowledge_base.created_by).full_name}
+    )
+    return resp
 
 
 @router.post("/", response_model=KnowledgeBasePublic)
@@ -93,7 +96,11 @@ def create_knowledge_base(
     session.add(knowledge_base)
     session.commit()
     session.refresh(knowledge_base)
-    return knowledge_base
+    resp = KnowledgeBasePublic.model_validate(
+        knowledge_base.dict(),
+        update={"owner": current_user.full_name}
+    )
+    return resp
 
 
 @router.put("/{id}", response_model=KnowledgeBasePublic)
@@ -122,7 +129,11 @@ def update_knowledge_base(
     session.add(knowledge_base)
     session.commit()
     session.refresh(knowledge_base)
-    return knowledge_base
+    resp = KnowledgeBasePublic.model_validate(
+        knowledge_base.dict(),
+        update={"owner": current_user.full_name}
+    )
+    return resp
 
 
 @router.delete("/{id}", response_model=KnowledgeBasePublic)
@@ -140,5 +151,9 @@ def delete_knowledge_base(*, session: SessionDep, current_user: CurrentUser, id:
     session.add(knowledge_base)
     session.commit()
     session.refresh(knowledge_base)
-    return knowledge_base
+    resp = KnowledgeBasePublic.model_validate(
+        knowledge_base.dict(),
+        update={"owner": current_user.full_name}
+    )
+    return resp
 

@@ -32,7 +32,7 @@ function getKnowledgeBasesQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
       KnowledgeBaseService.readKnowledgeBases({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-    queryKey: ["items", { page }],
+    queryKey: ["knowledgeBases", { page }],
   }
 }
 

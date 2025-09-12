@@ -108,7 +108,7 @@ class QdrantVectorStore:
             query_embedding: List[float],
             kb_id: Optional[str] = None,
             limit: int = 5,
-            score_threshold: float = 0.7
+            score_threshold: float = 0.3
     ) -> List[Dict[str, Any]]:
         """
         搜索相似的文本块
@@ -134,7 +134,6 @@ class QdrantVectorStore:
                         )
                     ]
                 )
-
             search_results = self.client.search(
                 collection_name=self.collection_name,
                 query_vector=query_embedding,
@@ -142,11 +141,10 @@ class QdrantVectorStore:
                 limit=limit,
                 score_threshold=score_threshold
             )
-
             results = []
             for result in search_results:
                 results.append({
-                    "id": result.id,
+                    "id": str(result.id),
                     "score": result.score,
                     "text": result.payload.get("text", ""),
                     "doc_id": result.payload.get("doc_id", ""),

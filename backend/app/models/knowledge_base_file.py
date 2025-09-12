@@ -77,3 +77,6 @@ class KnowledgeBaseFilesPublic(SQLModel):
     count: int
 
 
+class AskQuestion(SQLModel):
+    question: str
+

@@ -22,6 +22,7 @@ from app.models.knowledge_base_file import (
     KnowledgeBaseFileUpdate,
     KnowledgeBaseFilePublic,
     KnowledgeBaseFilesPublic,
+    AskQuestion,
 )
 from app.service.qdrant_util import QdrantVectorStore, get_vector_store
 from app.models.user import (
@@ -233,4 +234,27 @@ async def get_file_info(
     }
 
 
+@router.post("/docs/{doc_id}/ask")
+async def ask_question(*,
+                       question: AskQuestion,
+                       doc_id: uuid.UUID,
+                       vector_store: QdrantVectorStore = Depends(get_vector_store),
+                       ):
+    """查询接口: RAG pipeline"""
+    try:
+        # 1. 对问题生成 embedding
+        query_vec = embeddings.embed_query(question.question)
+        # 2. 从 Qdrant 检索
+        results = vector_store.search_similar(
+            query_embedding=query_vec,
+            kb_id=doc_id
+        )
+        # 3. 拼接上下文
+        context = "\n".join([r["text"] for r in results])
+        return {
+            "answer": context
+        }
+    except Exception as e:
+        print(f"message: {str(e)}")
+        raise HTTPException(status_code=500, detail="error")
 

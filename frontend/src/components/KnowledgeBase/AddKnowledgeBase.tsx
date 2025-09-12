@@ -52,12 +52,13 @@ const AddKnowledgeBase = () => {
       showSuccessToast("Knowledge base created successfully.")
       reset()
       setIsOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["knowledgeBases"], exact: false })
     },
     onError: (err: ApiError) => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["knowledgeBases"] })
+      queryClient.invalidateQueries({ queryKey: ["knowledgeBases"], exact: false })
     },
   })
 
