@@ -90,7 +90,6 @@ class QdrantVectorStore:
             self,
             query_embedding: List[float],
             kb_id: Optional[str] = None,
-            doc_id: Optional[str] = None,
             limit: int = 5,
             score_threshold: float = 0.6,
             candidate_multiplier: int = 4
@@ -106,8 +105,6 @@ class QdrantVectorStore:
             must_conditions = []
             if kb_id:
                 must_conditions.append(FieldCondition(key="kb_id", match=MatchValue(value=str(kb_id))))
-            if doc_id:
-                must_conditions.append(FieldCondition(key="doc_id", match=MatchValue(value=str(doc_id))))
             if must_conditions:
                 q_filter = Filter(must=must_conditions)
 
@@ -128,13 +125,13 @@ class QdrantVectorStore:
             candidates = []
             q_vec = np.array(query_embedding, dtype=float)
             for r in search_results:
-                vec = None
                 if hasattr(r, "vector") and r.vector is not None:
                     vec = np.array(r.vector, dtype=float)
                 else:
                     # 如果没有返回 vector，跳过（不做信任score）
                     continue
                 sim = self._cosine_sim(q_vec, vec)
+                print(f"cosine sim: {sim}")
                 payload = r.payload or {}
                 candidates.append({
                     "id": str(r.id),
