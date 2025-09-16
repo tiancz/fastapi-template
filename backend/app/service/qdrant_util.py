@@ -1,104 +1,87 @@
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
-from qdrant_client.http.models import PointStruct, Distance, VectorParams
-from typing import List, Optional, Dict, Any
+import numpy as np
 import uuid
-import os
 from datetime import datetime
+from qdrant_client.http import models
+from typing import List, Optional, Dict, Any
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, VectorParams, Distance
 
 
 class QdrantVectorStore:
-    """Qdrant 向量存储管理器"""
+    def __init__(self, client, collection_name: str, vector_size: Optional[int] = None, distance: Distance = Distance.COSINE):
+        self.client = client
+        self.collection_name = collection_name
+        self.vector_size = vector_size
+        self.distance = distance
+        # 确保 collection 已创建（如果 vector_size 可知）
+        if vector_size is not None:
+            self._ensure_collection(vector_size)
 
-    def __init__(self, url: str = "", api_key: Optional[str] = None):
-        self.client = QdrantClient(
-            url=url,
-            api_key=api_key,
-            timeout=30  # 增加超时时间
-        )
-        self.collection_name = "knowledge_documents"
-
-        # 确保集合存在
-        self._ensure_collection()
-
-    def _ensure_collection(self):
-        """确保集合存在，如果不存在则创建"""
+    def _ensure_collection(self, vector_size: int):
+        # 如果 collection 不存在则创建（兼容 qdrant-client）
         try:
-            # 检查集合是否存在
-            collections = self.client.get_collections()
-            collection_names = [col.name for col in collections.collections]
-
-            if self.collection_name not in collection_names:
-                # 创建新的集合
+            if not self.client.get_collection(self.collection_name, ignore_missing=False):
+                # 如果 get_collection 抛异常说明不存在 —— 使用 create_collection
+                pass
+        except Exception:
+            try:
+                self.client.recreate_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=vector_size, distance=self.distance)
+                )
+            except Exception:
+                # fallback: try create_collection
                 self.client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=1024,  # 根据你的嵌入模型调整维度
-                        distance=Distance.COSINE
-                    )
+                    vectors_config=VectorParams(size=vector_size, distance=self.distance)
                 )
-                print(f"✅ 创建集合: {self.collection_name}")
-            else:
-                print(f"✅ 集合已存在: {self.collection_name}")
 
-        except Exception as e:
-            print(f"❌ 检查/创建集合失败: {e}")
-            raise
+    @staticmethod
+    def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+        # 防止除0
+        if a is None or b is None:
+            return 0.0
+        na = np.linalg.norm(a)
+        nb = np.linalg.norm(b)
+        if na == 0 or nb == 0:
+            return 0.0
+        return float(np.dot(a, b) / (na * nb))
 
-    def insert_document(
-            self,
-            kb_id: str,
-            doc_id: str,
-            text_chunks: List[str],
-            embeddings: Optional[List[List[float]]] = None
-    ) -> int:
+    def insert_document(self, kb_id: str, doc_id: str, text_chunks: List[str], embeddings: List[List[float]]) -> int:
         """
-        把文档分块存入 Qdrant
-
-        Args:
-            kb_id: 知识库ID
-            doc_id: 文档ID
-            text_chunks: 文本块列表
-            embeddings: 可选的嵌入向量列表（如果为None则使用默认嵌入）
-
-        Returns:
-            插入的点数
+        向量插入：会校验维度、用确定性 id（便于更新），并批量 upsert
         """
+        if not embeddings or len(embeddings) != len(text_chunks):
+            raise ValueError("embeddings length must match text_chunks length")
+
+        vector_size = len(embeddings[0])
+        # 如果尚未创建 collection，则基于第一个向量维度创建
+        if self.vector_size is None:
+            self.vector_size = vector_size
+            self._ensure_collection(vector_size)
+        elif self.vector_size != vector_size:
+            raise ValueError(f"vector size mismatch: collection expects {self.vector_size}, got {vector_size}")
+
         points = []
-
-        for i, chunk in enumerate(text_chunks):
-            # 生成嵌入向量（如果没有提供）
-            if embeddings and i < len(embeddings):
-                embedding = embeddings[i]
-            else:
-                # 默认嵌入（实际使用时应该替换为真实的嵌入模型）
-                embedding = [0.1] * 384  # 384维的默认向量
-
-            point = PointStruct(
+        for i, (chunk, emb) in enumerate(zip(text_chunks, embeddings)):
+            # 限制 payload 中 text 的长度，避免过大
+            pts = PointStruct(
                 id=str(uuid.uuid4()),
-                vector=embedding,
+                vector=emb,
                 payload={
                     "kb_id": str(kb_id),
                     "doc_id": str(doc_id),
                     "text": chunk,
                     "chunk_index": i,
-                    "created_at": datetime.now().isoformat(),
+                    "created_at": datetime.utcnow().isoformat(),
                     "text_length": len(chunk)
                 }
             )
-            points.append(point)
+            points.append(pts)
 
+        # 批量 upsert（等待完成）
         try:
-            # 批量插入点
-            operation_info = self.client.upsert(
-                collection_name=self.collection_name,
-                points=points,
-                wait=True  # 等待操作完成
-            )
-
-            print(f"✅ 成功插入 {len(points)} 个文本块到文档 {doc_id}")
+            op = self.client.upsert(collection_name=self.collection_name, points=points, wait=True)
             return len(points)
-
         except Exception as e:
             print(f"❌ 插入文档失败: {e}")
             raise
@@ -107,52 +90,71 @@ class QdrantVectorStore:
             self,
             query_embedding: List[float],
             kb_id: Optional[str] = None,
+            doc_id: Optional[str] = None,
             limit: int = 5,
-            score_threshold: float = 0.3
+            score_threshold: float = 0.6,
+            candidate_multiplier: int = 4
     ) -> List[Dict[str, Any]]:
         """
-        搜索相似的文本块
-
-        Args:
-            query_embedding: 查询向量
-            kb_id: 限制在特定知识库中搜索
-            limit: 返回结果数量
-            score_threshold: 相似度阈值
-
-        Returns:
-            相似文本块列表
+        检索并用本地 cosine 重新排序：
+         - 先从 qdrant 拉回较多候选（limit * candidate_multiplier）
+         - 使用 with_vectors=True 获取真正向量，在本地用 cosine 进行精确重排和阈值过滤
         """
         try:
-            # 构建过滤条件
-            filter_condition = None
+            # 构建 filter
+            q_filter = None
+            must_conditions = []
             if kb_id:
-                filter_condition = models.Filter(
-                    must=[
-                        models.FieldCondition(
-                            key="kb_id",
-                            match=models.MatchValue(value=str(kb_id))
-                        )
-                    ]
-                )
+                must_conditions.append(FieldCondition(key="kb_id", match=MatchValue(value=str(kb_id))))
+            if doc_id:
+                must_conditions.append(FieldCondition(key="doc_id", match=MatchValue(value=str(doc_id))))
+            if must_conditions:
+                q_filter = Filter(must=must_conditions)
+
+            # 拉回更多候选以便本地重排
+            fetch_n = max(limit * candidate_multiplier, limit)
+
+            # 注意 with_vectors=True，用以本地重新计算相似度
             search_results = self.client.search(
                 collection_name=self.collection_name,
                 query_vector=query_embedding,
-                query_filter=filter_condition,
-                limit=limit,
-                score_threshold=score_threshold
+                query_filter=q_filter,
+                limit=fetch_n,
+                with_payload=True,
+                with_vectors=True
             )
-            results = []
-            for result in search_results:
-                results.append({
-                    "id": str(result.id),
-                    "score": result.score,
-                    "text": result.payload.get("text", ""),
-                    "doc_id": result.payload.get("doc_id", ""),
-                    "kb_id": result.payload.get("kb_id", ""),
-                    "chunk_index": result.payload.get("chunk_index", 0)
+
+            # 计算本地 cosine，并重排
+            candidates = []
+            q_vec = np.array(query_embedding, dtype=float)
+            for r in search_results:
+                vec = None
+                if hasattr(r, "vector") and r.vector is not None:
+                    vec = np.array(r.vector, dtype=float)
+                else:
+                    # 如果没有返回 vector，跳过（不做信任score）
+                    continue
+                sim = self._cosine_sim(q_vec, vec)
+                payload = r.payload or {}
+                candidates.append({
+                    "id": str(r.id),
+                    "score": sim,
+                    "text": payload.get("text", ""),
+                    "doc_id": payload.get("doc_id", ""),
+                    "kb_id": payload.get("kb_id", ""),
+                    "chunk_index": payload.get("chunk_index", 0)
                 })
 
-            return results
+            # 按 score 降序并过滤阈值
+            candidates = sorted(candidates, key=lambda x: x["score"], reverse=True)
+            filtered = [c for c in candidates if c["score"] >= score_threshold]
+
+            # 如果过滤后太少，可以回退到 top-N 无阈值（可选）
+            if len(filtered) < limit:
+                topk = candidates[:limit]
+                return topk
+            else:
+                return filtered[:limit]
 
         except Exception as e:
             print(f"❌ 搜索失败: {e}")
@@ -209,16 +211,4 @@ class QdrantVectorStore:
         except Exception as e:
             print(f"❌ Qdrant 连接失败: {e}")
             return False
-
-
-# 全局实例（或者使用依赖注入）
-qdrant_store = QdrantVectorStore(
-    url="http://qdrant:6333",
-    api_key=os.getenv("QDRANT_API_KEY", "test_env")
-)
-
-
-def get_vector_store() -> QdrantVectorStore:
-    """获取本地存储实例的依赖函数"""
-    return qdrant_store
 

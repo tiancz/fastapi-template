@@ -23,13 +23,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_user_email
     (email COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS public."knowledge_base"
+
+
+-- Table: public.knowledge_base
+-- DROP TABLE IF EXISTS public.knowledge_base;
+CREATE TABLE IF NOT EXISTS public.knowledge_base
 (
     description text COLLATE pg_catalog."default",
     created_by uuid NOT NULL,
-    created_at timestamp DEFAULT current_timestamp,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_by uuid NOT NULL,
-    updated_at timestamp DEFAULT current_timestamp,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     name character varying(255) COLLATE pg_catalog."default",
     status smallint,
     id uuid NOT NULL,
@@ -38,15 +42,17 @@ CREATE TABLE IF NOT EXISTS public."knowledge_base"
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public."knowledge_base"
+ALTER TABLE IF EXISTS public.knowledge_base
     OWNER to postgres;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ix_knowledge_base_name
-    ON public."knowledge_base" USING btree
+CREATE INDEX IF NOT EXISTS ix_knowledge_base_name
+    ON public.knowledge_base USING btree
     (name COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
 
 
+
+-- Table: public.knowledge_base_file
 CREATE TABLE IF NOT EXISTS public."knowledge_base_file"
 (
     created_by uuid NOT NULL,
@@ -73,12 +79,12 @@ CREATE INDEX IF NOT EXISTS ix_knowledge_base_file_name
     ON public."knowledge_base_file" USING btree
     (name COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
-CREATE INDEX IF NOT EXISTS ix_knowledge_base_file_file_hash
+CREATE UNIQUE INDEX IF NOT EXISTS ix_knowledge_base_file_file_hash
     ON public.knowledge_base_file USING btree
     (file_hash COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
 
-
+-- Table: public.knowledge_base_permission
 CREATE TABLE IF NOT EXISTS public."knowledge_base_permission"
 (
     created_by uuid NOT NULL,

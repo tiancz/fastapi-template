@@ -24,16 +24,21 @@ from app.models.knowledge_base_file import (
     KnowledgeBaseFilesPublic,
     AskQuestion,
 )
-from app.service.qdrant_util import QdrantVectorStore, get_vector_store
+from app.service.qdrant_util import QdrantVectorStore
 from app.models.user import (
     User,
     UserPublic,
     UsersPublic,
 )
 from langchain_community.embeddings import ZhipuAIEmbeddings
+from qdrant_client import QdrantClient
 
 
 router = APIRouter(tags=["docs"])
+
+
+client = QdrantClient(url="http://qdrant:6333", api_key=os.getenv("QDRANT_API_KEY", "test_env"))
+vector_store = QdrantVectorStore(client, collection_name="knowledge_documents")
 
 
 # ========= 工具函数 =========
@@ -45,7 +50,7 @@ embeddings = ZhipuAIEmbeddings(
 
 
 def chunk_text(text: str, max_len: int = 500) -> List[str]:
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=max_len, chunk_overlap=0)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=max_len, chunk_overlap=100)
     texts = text_splitter.split_text(text)
     return texts
 
@@ -90,7 +95,6 @@ async def upload_doc(*, session: SessionDep,
                      kb_id: uuid.UUID,
                      file: UploadFile = File(...),
                      current_user: CurrentUser,
-                     vector_store: QdrantVectorStore = Depends(get_vector_store),
                      storage: LocalStorage = Depends(get_local_storage)):
     # 1. 保存文件
     # 异步读取全部 bytes
@@ -134,11 +138,12 @@ async def upload_doc(*, session: SessionDep,
         """向量化文档并存储到 Qdrant"""
         try:
             embedding = embeddings.embed_documents(chunks)
+            # 插入文档
             count = vector_store.insert_document(
                 kb_id=kb_id,
                 doc_id=doc_id,
                 text_chunks=chunks,
-                embeddings=embedding
+                embeddings=embedding  # 这里替换成你的 embed_documents 结果
             )
             print(f"message: 文档 {doc_id} 向量化成功, 共计向量化 {count} 条数据")
         except Exception as e:
@@ -234,25 +239,19 @@ async def get_file_info(
     }
 
 
-@router.post("/docs/{doc_id}/ask")
+@router.post("/kb/{kb_id}/ask")
 async def ask_question(*,
                        question: AskQuestion,
-                       doc_id: uuid.UUID,
-                       vector_store: QdrantVectorStore = Depends(get_vector_store),
+                       kb_id: uuid.UUID,
                        ):
     """查询接口: RAG pipeline"""
     try:
         # 1. 对问题生成 embedding
         query_vec = embeddings.embed_query(question.question)
         # 2. 从 Qdrant 检索
-        results = vector_store.search_similar(
-            query_embedding=query_vec,
-            kb_id=doc_id
-        )
-        # 3. 拼接上下文
-        context = "\n".join([r["text"] for r in results])
+        results = vector_store.search_similar(query_embedding=query_vec, kb_id=kb_id, limit=5)
         return {
-            "answer": context
+            "answer": results
         }
     except Exception as e:
         print(f"message: {str(e)}")
