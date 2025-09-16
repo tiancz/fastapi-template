@@ -131,7 +131,6 @@ class QdrantVectorStore:
                     # 如果没有返回 vector，跳过（不做信任score）
                     continue
                 sim = self._cosine_sim(q_vec, vec)
-                print(f"cosine sim: {sim}")
                 payload = r.payload or {}
                 candidates.append({
                     "id": str(r.id),
