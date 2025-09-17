@@ -31,6 +31,7 @@ from app.models.user import (
     UsersPublic,
 )
 from langchain_community.embeddings import ZhipuAIEmbeddings
+from langchain_community.chat_models import ChatZhipuAI
 from qdrant_client import QdrantClient
 
 
@@ -250,8 +251,15 @@ async def ask_question(*,
         query_vec = embeddings.embed_query(question.question)
         # 2. 从 Qdrant 检索
         results = vector_store.search_similar(query_embedding=query_vec, kb_id=kb_id, limit=5)
+        llm = ChatZhipuAI(
+            model="glm-4",
+            temperature=0.5,
+        )
+        print(f"result: {results}")
+        prompt = f"已知内容:\n{results}\n\n问题: {question}\n请基于已知内容回答。"
+        answer = llm.invoke(prompt).content
         return {
-            "answer": results
+            "answer": answer
         }
     except Exception as e:
         print(f"message: {str(e)}")
