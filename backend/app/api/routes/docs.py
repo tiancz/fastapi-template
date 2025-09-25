@@ -51,6 +51,20 @@ embeddings = ZhipuAIEmbeddings(
 
 
 def chunk_text(text: str, max_len: int = 500) -> List[str]:
+    """
+    CharacterTextSplitter
+    基于字符数进行切割。
+    RecursiveCharacterTextSplitter
+    基于文本结构进行切割，尝试保持段落等较大单元的完整性。
+    MarkdownTextSplitter
+    基于 Markdown 标题进行切割。
+    HTMLTextSplitter
+    基于 HTML 标签进行切割。
+    RecursiveJSONTextSplitter
+    基于 JSON 结构进行切割。
+    CodeTextSplitter
+    基于代码结构进行切割。
+    """
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=max_len, chunk_overlap=100)
     texts = text_splitter.split_text(text)
     return texts
@@ -58,6 +72,10 @@ def chunk_text(text: str, max_len: int = 500) -> List[str]:
 
 def extract_text_from_file(file_path: str, filename: str) -> str:
     """根据文件类型解析文本"""
+
+    """
+    加载器:CSV、文件目录、HTML、JSON、Markdown 及 PDF等。
+    """
     ext = os.path.splitext(filename)[1].lower()
     if ext == ".pdf":
         loader = PyPDFLoader(file_path)
