@@ -73,9 +73,14 @@ def read_knowledge_base(session: SessionDep, id: uuid.UUID,) -> Any:
     knowledge_base = session.exec(statement).first()
     if not knowledge_base:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
+    # 获取创建者信息
+    creator = session.get(User, knowledge_base.created_by)
+    creator_public = UserPublic(id=creator.id, email=creator.email, is_active=creator.is_active, 
+                              is_superuser=creator.is_superuser, full_name=creator.full_name)
+
     resp = KnowledgeBasePublic.model_validate(
         knowledge_base.dict(),
-        update={"owner": UserPublic.model_validate(knowledge_base.created_by).full_name}
+        update={"owner": creator_public.full_name}
     )
     return resp
 
